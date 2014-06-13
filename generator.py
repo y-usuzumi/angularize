@@ -6,8 +6,14 @@ def issubclassofany(type, l):
     return True in map(lambda base: issubclass(type, base), l)
 
 def class_stringify(cls):
-    if issubclass(cls, type):
-        
+    if isinstance(cls, type):
+        cls_regex = re.compile("<class '(\w+\.)*(?P<cls>\w+)'>")
+        match = cls_regex.match(str(cls))
+        if not match:
+            raise TypeError("%s is probably not a type", cls)
+        return match.group('cls')
+    else:
+        raise TypeError("%s is not a type", cls)
 
 class ASTTranslator:
     def __init__(self, code):
@@ -23,10 +29,10 @@ class ASTTranslator:
 
     # 节点类别组分发器
     for group in [
-            ast.mod, ast.stmt, ast.expr, ast.expr_context,
-            ast.slice, ast.boolop, ast.operator, ast.unaryop,
-            ast.compop, ast.comprehension, ast.excepthandler,
-            ast.arguments, ast.keyword, ast.alias
+            'mod', 'stmt', 'expr', 'expr_context',
+            'slice', 'boolop', 'operator', 'unaryop',
+            'compop', 'comprehension', 'excepthandler',
+            'arguments', 'keyword', 'alias'
     ]:
         exec(
 '''
@@ -35,72 +41,8 @@ def __{0}_translate(self, node):
     translator_name = "__%s_translate" % \
                       class_stringify(t.mro()[-4]) # dirty work
     self.__dict__[translator_name](node)
-''' % )
+'''.format(group))
 
-    def __mod_translate(self, node):
-        t = type(node)
-        
-
-    def __stmt_translate(self, node):
-        t = type(node)
-
-    def __expr_translate(self, node):
-        t = type(node)
-
-    def __expr_context_translate(self, node):
-        # do nothing
-        pass
-
-    def __slice_translate(self, node):
-        # do nothing
-        pass
-
-    def __boolop_translate(self, node):
-        # do nothing
-        pass
-
-    def __operator_translate(self, node):
-        # do nothing
-        pass
-
-    def __unaryop_translate(self, node):
-        # do nothing
-        pass
-
-    def __cmpop_translate(self, node):
-        # do nothing
-        pass
-
-    def __comprehension_translate(self, node):
-        # do nothing
-        pass
-
-    def __excepthandler_translate(self, node):
-        # do nothing
-        pass
-        
-    def __arguments_translate(self, node):
-        # do nothing
-        pass
-
-    def __arg_translate(self, node):
-        # do nothing
-        pass
-
-    def __keyword_translate(self, node):
-        # do nothing
-        pass
-
-    def __alias_translate(self, node):
-        # do nothing
-        pass
-
-    def __withitem_translate(self, node):
-        # do nothing
-        pass
-
-
-        
 
 def node_translate(node):
     t = type(node)
