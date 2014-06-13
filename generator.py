@@ -16,17 +16,21 @@ def class_stringify(cls):
         raise TypeError("%s is not a type", cls)
 
 class AstTranslator:
+    __function_mappings = {
+        'print': 'alert'
+    }
+    
     def __init__(self, code):
         self.code = code
 
-    def _node_translate(self, node):
+    def _node_translate(self, node, *args, **kwargs):
         t = type(node)
         if issubclass(t, list):
             node = node[0]
             t = type(node)
         translator_name = "_%s_translate" % \
                            class_stringify(t.mro()[-3]) # dirty work
-        return getattr(self, translator_name)(node)
+        return getattr(self, translator_name)(node, *args, **kwargs)
 
 ## TODO: 敢不敢把这玩意放元类里？
 
@@ -38,50 +42,77 @@ class AstTranslator:
     ]:
         exec(
 '''
-def _{0}_translate(self, node):
+def _{0}_translate(self, node, *args, **kwargs):
     t = type(node)
     translator_name = "_%s_translate" % \
                        class_stringify(t.mro()[-4]) # dirty work
-
-    return getattr(self, translator_name)(node)
+    return getattr(self, translator_name)(node, *args, **kwargs)
 '''.format(group))
 
-    def _arg_translate(self, node):
+    def _arg_translate(self, node, *args, **kwargs):
         return node.arg
 
-    def _arguments_translate(self, node):
+    def _arguments_translate(self, node, *args, **kwargs):
         _templ = "{0}"
         return ', '.join([_templ.format(self._node_translate(arg)) for arg in node.args])
 
-    def _FunctionDef_translate(self, node):
+    def _Name_translate(self, node, *args, **kwargs):
+        _templ = "{0}"
+        parent = kwargs.get('parent', None)
+        id = node.id
+        if isinstance(parent, ast.Call):
+            # function transformation
+            id = self.__function_mappings.get(id, id)
+        return _templ.format(id)
+
+    def _Expr_translate(self, node, *args, **kwargs):
+        _templ = "{0}"
+        return _templ.format(self._node_translate(node.value))
+
+    def _FunctionDef_translate(self, node, *args, **kwargs):
         _templ = "function {0}({1}) {{ {2} }}"
         return _templ.format(node.name, self._node_translate(node.args), self._node_translate(node.body))
 
-    def _Return_translate(self, node):
+    def _Call_translate(self, node, *args, **kwargs):
+        _templ = "{0}({1});"
+        args = ','.join([self._node_translate(n) for n in node.args])
+        return _templ.format(self._node_translate(node.func, parent=node), args)
+        
+
+    def _Return_translate(self, node, *args, **kwargs):
         _templ = "return {0};"
         if hasattr(node.value, 'n'):
             return _templ.format(node.value.n)
         else:
             return _templ.format(self._node_translate(node.value));
 
-    def _BinOp_translate(self, node):
-        _templ = "{0} {1} {2}"
-        return _templ.format(self._node_translate(node.left), self._node_translate(node.op), self._node_translate(node.right))
+    def _BinOp_translate(self, node, *args, **kwargs):
+        if isinstance(node.op, ast.FloorDiv):
+            _templ = "parseInt({0} / {1})"
+            return _templ.format(self._node_translate(node.left), self._node_translate(node.right))
+        else:
+            _templ = "{0} {1} {2}"
+            return _templ.format(self._node_translate(node.left), self._node_translate(node.op), self._node_translate(node.right))
 
-    def _Name_translate(self, node):
-        _templ = "{0}"
-        return _templ.format(node.id)
-
-    def _Add_translate(self, node):
+    def _Add_translate(self, node, *args, **kwargs):
         _templ = "{0}"
         return _templ.format("+")
 
-    def node_translate(self, node):
-        if isinstance(node, str):
-            node = ast.parse(node).body[0]
+    def _Sub_translate(self, node, *args, **kwargs):
+        _templ = "{0}"
+        return _templ.format("-")
+
+    def _Div_translate(self, node, *args, **kwargs):
+        _templ = "{0}"
+        return _templ.format("/")
+
+    def node_translate(self):
+        code = self.code
+        if isinstance(self.code, str):
+            code = ast.parse(self.code).body[0]
             
-        return self._node_translate(node)
-            
+        return self._node_translate(code)
+
 
 def func_body_translate(body):
     return "TODO"

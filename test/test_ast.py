@@ -30,6 +30,6 @@ class TestAst(unittest.TestCase):
                         
     def test_ast_translator_translate_functions(self):
         from generator import AstTranslator
-        code = '''def func(a, b): return a + b'''
+        code = '''def func(a, b): print(a // b)'''
         translator = AstTranslator(code)
-        print(translator.node_translate(code))
+        print(translator.node_translate())
