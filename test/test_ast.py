@@ -1,6 +1,15 @@
+# -*- coding: utf-8 -*-
+################################
+# Angularize
+# @author: Savor d'Isavano
+# @date:  2014-06-13
+################################
+
 import unittest
 
 class TestAst(unittest.TestCase):
+    '''测试generator模块'''
+    
     def setUp(self):
         pass
 
@@ -33,8 +42,8 @@ class TestAst(unittest.TestCase):
         
         code = '''def func(a, b): print(a // b)'''
         translator = AstTranslator(code)
-        print(translator.node_translate())
+        print(translator.translate())
         
         code = '''def func(): x = 3; x = 4'''
         translator = AstTranslator(code)
-        print(translator.node_translate())
+        print(translator.translate())

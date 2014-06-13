@@ -1,12 +1,26 @@
+# -*- coding: utf-8 -*-
+################################
+# Angularize
+# @author: Savor d'Isavano
+# @date:  2014-06-13
+################################
+
 import inspect
 import ast
 import re
 from collections import defaultdict
 
 def issubclassofany(type, l):
+    '''测试一个类型是否是列表中任一类型的子类型或自身'''
     return True in map(lambda base: issubclass(type, base), l)
 
 def class_stringify(cls):
+    '''获取一个类型的简单字符串表示
+    比如：
+    <class 'int'> -> int
+    <class 'generator.AstTranslator'> -> AstTranslator
+    '''
+    
     if isinstance(cls, type):
         cls_regex = re.compile("<class '(\w+\.)*(?P<cls>\w+)'>")
         match = cls_regex.match(str(cls))
@@ -17,6 +31,8 @@ def class_stringify(cls):
         raise TypeError("%s is not a type", cls)
 
 class AstTranslator:
+    '''Python到JavaScript代码翻译器'''
+    
     __function_mappings = {
         'print': 'console.log'
     }
@@ -132,18 +148,13 @@ def _{0}_translate(self, node, *args, **kwargs):
         _tmpl = "{0}"
         return _tmpl.format("/")
 
-    def node_translate(self):
+    def translate(self):
+        '''执行翻译过程'''
         code = self.code
         if isinstance(self.code, str):
             code = ast.parse(self.code).body[0]
             
         return self._node_translate(code)
-
-
-def func_body_translate(body):
-    return "TODO"
-    for node in body:
-        s = node_translate(node)
 
 
 class Env:
