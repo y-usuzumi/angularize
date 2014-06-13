@@ -1,6 +1,7 @@
 import inspect
 import ast
 import re
+from collections import defaultdict
 
 def issubclassofany(type, l):
     return True in map(lambda base: issubclass(type, base), l)
@@ -17,20 +18,25 @@ def class_stringify(cls):
 
 class AstTranslator:
     __function_mappings = {
-        'print': 'alert'
+        'print': 'console.log'
     }
-    
+
     def __init__(self, code):
         self.code = code
+        self.__block_level = 0
+        self.__scope_variables = defaultdict(list)
 
     def _node_translate(self, node, *args, **kwargs):
-        t = type(node)
-        if issubclass(t, list):
-            node = node[0]
-            t = type(node)
-        translator_name = "_%s_translate" % \
-                           class_stringify(t.mro()[-3]) # dirty work
-        return getattr(self, translator_name)(node, *args, **kwargs)
+        if not isinstance(node, list):
+            node = [node]
+        res = []
+        for n in node:
+            t = type(n)
+            # dirty work
+            translator_name = "_%s_translate" % \
+                              class_stringify(t.mro()[-3])
+            res.append(getattr(self, translator_name)(n, *args, **kwargs))
+        return ' '.join(res)
 
 ## TODO: 敢不敢把这玩意放元类里？
 
@@ -53,58 +59,78 @@ def _{0}_translate(self, node, *args, **kwargs):
         return node.arg
 
     def _arguments_translate(self, node, *args, **kwargs):
-        _templ = "{0}"
-        return ', '.join([_templ.format(self._node_translate(arg)) for arg in node.args])
+        _tmpl = "{0}"
+        return ', '.join([_tmpl.format(self._node_translate(arg)) for arg in node.args])
 
     def _Name_translate(self, node, *args, **kwargs):
-        _templ = "{0}"
+        _tmpl = "{0}"
         parent = kwargs.get('parent', None)
         id = node.id
         if isinstance(parent, ast.Call):
             # function transformation
             id = self.__function_mappings.get(id, id)
-        return _templ.format(id)
+        return _tmpl.format(id)
 
     def _Expr_translate(self, node, *args, **kwargs):
-        _templ = "{0}"
-        return _templ.format(self._node_translate(node.value))
+        _tmpl = "{0}"
+        return _tmpl.format(self._node_translate(node.value))
+
+    def _Num_translate(self, node, *args, **kwargs):
+        _tmpl = "{0}"
+        return _tmpl.format(node.n)
+
+    def _Assign_translate(self, node, *args, **kwargs):
+        # TODO: Not checking global variables and stuff.
+        names = [name.id for name in node.targets]
+        # TODO: Cannot do multiple assignments
+        name = names[0]
+        if name not in self.__scope_variables[self.__block_level]:
+            self.__scope_variables[self.__block_level].append(name)
+            _tmpl = "var {0} = {1};"
+        else:
+            _tmpl = "{0} = {1};"
+        return _tmpl.format(name, self._node_translate(node.value))
 
     def _FunctionDef_translate(self, node, *args, **kwargs):
-        _templ = "function {0}({1}) {{ {2} }}"
-        return _templ.format(node.name, self._node_translate(node.args), self._node_translate(node.body))
+        self.__block_level += 1
+        _tmpl = "function {0}({1}) {{ {2} }}"
+        res = _tmpl.format(node.name, self._node_translate(node.args), self._node_translate(node.body))
+        self.__scope_variables[self.__block_level].clear()
+        self.__block_level -= 1
+        return res
 
     def _Call_translate(self, node, *args, **kwargs):
-        _templ = "{0}({1});"
+        _tmpl = "{0}({1});"
         args = ','.join([self._node_translate(n) for n in node.args])
-        return _templ.format(self._node_translate(node.func, parent=node), args)
+        return _tmpl.format(self._node_translate(node.func, parent=node), args)
         
 
     def _Return_translate(self, node, *args, **kwargs):
-        _templ = "return {0};"
+        _tmpl = "return {0};"
         if hasattr(node.value, 'n'):
-            return _templ.format(node.value.n)
+            return _tmpl.format(node.value.n)
         else:
-            return _templ.format(self._node_translate(node.value));
+            return _tmpl.format(self._node_translate(node.value));
 
     def _BinOp_translate(self, node, *args, **kwargs):
         if isinstance(node.op, ast.FloorDiv):
-            _templ = "parseInt({0} / {1})"
-            return _templ.format(self._node_translate(node.left), self._node_translate(node.right))
+            _tmpl = "parseInt({0} / {1})"
+            return _tmpl.format(self._node_translate(node.left), self._node_translate(node.right))
         else:
-            _templ = "{0} {1} {2}"
-            return _templ.format(self._node_translate(node.left), self._node_translate(node.op), self._node_translate(node.right))
+            _tmpl = "{0} {1} {2}"
+            return _tmpl.format(self._node_translate(node.left), self._node_translate(node.op), self._node_translate(node.right))
 
     def _Add_translate(self, node, *args, **kwargs):
-        _templ = "{0}"
-        return _templ.format("+")
+        _tmpl = "{0}"
+        return _tmpl.format("+")
 
     def _Sub_translate(self, node, *args, **kwargs):
-        _templ = "{0}"
-        return _templ.format("-")
+        _tmpl = "{0}"
+        return _tmpl.format("-")
 
     def _Div_translate(self, node, *args, **kwargs):
-        _templ = "{0}"
-        return _templ.format("/")
+        _tmpl = "{0}"
+        return _tmpl.format("/")
 
     def node_translate(self):
         code = self.code
