@@ -1,0 +1,12 @@
+import unittest
+
+class TestAST(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test___issubclassofany(self):
+        from generator import __issubclassofany
+        from collections import defaultdict
+        self.assertTrue(__issubclassofany(dict, [defaultdict, int, str]))
+        self.assertFalse(__issubclassofany(dict, [int, str, float])
+                        
