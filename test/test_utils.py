@@ -34,6 +34,5 @@ def code_matches_rule(code, rule):
         .replace('᩽*᩽', '\*') \
         .replace('᩽/᩽', '\/')
         
-    print(rule)
     regex = re.compile(rule)
     return regex.match(code) is not None
