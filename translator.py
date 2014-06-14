@@ -11,7 +11,7 @@ import re
 from collections import defaultdict
 
 def issubclassofany(type, l):
-    '''测试一个类型是否是列表中任一类型的子类型或自身'''
+    '''测试一个类型是否是列表中任一类型或其子类型'''
     return True in map(lambda base: issubclass(type, base), l)
 
 def class_stringify(cls):
