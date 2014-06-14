@@ -32,6 +32,7 @@ class DataTypeDescriptor:
 
 
     def __set__(self, instance, value):
+        self.instance = instance
         name = self.name
         def raiseTypeError(expected, actual):
             raise TypeError("%s expected. Got %s" % (expected, actual))
@@ -101,13 +102,16 @@ class Watched(DataTypeDescriptor):
 
         self.__class__.__type__ = type.__type__
 
-        if not callable(rule):
-            raise TypeError("%s不是一个callable对象" % rule)
+        if not isinstance(rule, str):
+            raise TypeError("现在rule只接收字符串对象")
 
-        spec = getfullargspec(rule)
-        args_num = len(spec.args)
-        if args_num < 3:
-            raise ValueError("%s只有%d个位置参数，至少需要3个" % (rule, args_num))
+        # if not callable(rule):
+        #     raise TypeError("%s不是一个callable对象" % rule)
+
+        # spec = getfullargspec(rule)
+        # args_num = len(spec.args)
+        # if args_num < 3:
+        #     raise ValueError("%s只有%d个位置参数，至少需要3个" % (rule, args_num))
 
         self.rule = rule
 
