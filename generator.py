@@ -41,17 +41,24 @@ class AstTranslator:
         self.code = code
         self.__block_level = 0
         self.__scope_variables = defaultdict(list)
+        self.__tree_stack = [None]
 
     def _node_translate(self, node, *args, **kwargs):
+        parent = self.__tree_stack[-1]
+        
         if not isinstance(node, list):
             node = [node]
+
         res = []
         for n in node:
+            n.parent = parent
+            self.__tree_stack.append(n)
             t = type(n)
             # dirty work
             translator_name = "_%s_translate" % \
                               class_stringify(t.mro()[-3])
             res.append(getattr(self, translator_name)(n, *args, **kwargs))
+            self.__tree_stack.pop()
         return ' '.join(res)
 
 ## TODO: 敢不敢把这玩意放元类里？
@@ -72,19 +79,30 @@ def _{0}_translate(self, node, *args, **kwargs):
 '''.format(group))
 
     def _arg_translate(self, node, *args, **kwargs):
+        self.__scope_variables[self.__block_level].append(node.arg)
+
         return node.arg
 
     def _arguments_translate(self, node, *args, **kwargs):
         _tmpl = "{0}"
-        return ', '.join([_tmpl.format(self._node_translate(arg)) for arg in node.args])
+        res = []
+        for arg in node.args:
+            arg_res = _tmpl.format(
+                self._node_translate(
+                    arg, *args, **kwargs))
+            res.append(arg_res)
+            
+        return ', '.join(res)
+
 
     def _Name_translate(self, node, *args, **kwargs):
         _tmpl = "{0}"
-        parent = kwargs.get('parent', None)
+        parent = node.parent
         id = node.id
         if isinstance(parent, ast.Call):
             # function transformation
             id = self.__function_mappings.get(id, id)
+            
         return _tmpl.format(id)
 
     def _Expr_translate(self, node, *args, **kwargs):
@@ -118,7 +136,7 @@ def _{0}_translate(self, node, *args, **kwargs):
     def _Call_translate(self, node, *args, **kwargs):
         _tmpl = "{0}({1});"
         args = ','.join([self._node_translate(n) for n in node.args])
-        return _tmpl.format(self._node_translate(node.func, parent=node), args)
+        return _tmpl.format(self._node_translate(node.func), args)
         
 
     def _Return_translate(self, node, *args, **kwargs):
@@ -143,6 +161,10 @@ def _{0}_translate(self, node, *args, **kwargs):
     def _Sub_translate(self, node, *args, **kwargs):
         _tmpl = "{0}"
         return _tmpl.format("-")
+
+    def _Mult_translate(self, mode, *args, **kwargs):
+        _tmpl = "{0}"
+        return _tmpl.format("*")
 
     def _Div_translate(self, node, *args, **kwargs):
         _tmpl = "{0}"

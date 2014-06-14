@@ -6,6 +6,7 @@
 ################################
 
 import unittest
+from test.test_utils import code_matches_rule
 
 class TestAst(unittest.TestCase):
     '''测试generator模块'''
@@ -42,8 +43,12 @@ class TestAst(unittest.TestCase):
         
         code = '''def func(a, b): print(a // b)'''
         translator = AstTranslator(code)
-        print(translator.translate())
+        rule = " function func ( a , b ) { console.log ( parseInt ( a / b ) ) ; } "
+        result = translator.translate()
+        self.assertTrue(code_matches_rule(result, rule))
         
-        code = '''def func(): x = 3; x = 4'''
+        code = '''def func(x): x = 3;  x = 4; y = 5; y = 6; print(x + y * y)'''
         translator = AstTranslator(code)
-        print(translator.translate())
+        rule = " function func ( x ) { x = 3 ; x = 4 ; var y = 5 ; y = 6; console.log ( x + y * y ) ; } "
+        result = translator.translate()
+        self.assertTrue(code_matches_rule(result, rule))
