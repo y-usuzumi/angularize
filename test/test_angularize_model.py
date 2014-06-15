@@ -1,6 +1,6 @@
 import unittest
 from angularize.model import *
-from translator import AstTranslator
+from angularize.translator import AstTranslator
 
 class TestModel(NgzModel):
     test_1 = Integer()
@@ -22,7 +22,7 @@ class TestAngularizeModel(unittest.TestCase):
         klass = model.__class__
         watched_object = klass.__dict__['test_3']
         rule = getattr(klass, watched_object.rule)
-        import ast, inspect
+        import inspect
         code_lines = inspect.getsourcelines(rule)[0]
         if code_lines:
             indent_len = len(code_lines[0]) - len(code_lines[0].lstrip())

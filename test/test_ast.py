@@ -7,6 +7,8 @@
 
 import unittest
 from test.test_utils import code_matches_rule
+from utils.lang import class_stringify, issubclass_of_any
+from angularize.translator import AstTranslator
 
 class TestAst(unittest.TestCase):
     '''测试translator模块'''
@@ -14,21 +16,18 @@ class TestAst(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_issubclassofany(self):
-        from translator import issubclassofany
+    def test_issubclass_of_any(self):
         from collections import defaultdict
-        self.assertTrue(issubclassofany(defaultdict, [dict, int, str]))
-        self.assertFalse(issubclassofany(defaultdict, [int, str, float]))
+        self.assertTrue(issubclass_of_any(defaultdict, [dict, int, str]))
+        self.assertFalse(issubclass_of_any(defaultdict, [int, str, float]))
 
     def test_class_stringify(self):
-        from translator import class_stringify
         import ast
         self.assertEqual(class_stringify(ast.stmt), 'stmt')
         self.assertEqual(class_stringify(ast.Module), 'Module')
         self.assertEqual(class_stringify(int), 'int')
 
     def test_ast_translator_methods_created_properly(self):
-        from translator import AstTranslator
         self.assertTrue('_stmt_translate' in AstTranslator.__dict__)
         translator = AstTranslator(None)
         translator = AstTranslator(None)
@@ -40,7 +39,6 @@ class TestAst(unittest.TestCase):
         self.assertTrue(lv1_type is ast.stmt)
 
     def test_ast_translator_translate_functions(self):
-        from translator import AstTranslator
 
         code = '''def func(a, b): print(a // b)'''
         translator = AstTranslator(code)
