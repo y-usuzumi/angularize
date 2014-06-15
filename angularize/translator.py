@@ -5,10 +5,11 @@
 # @date:  2014-06-13
 ################################
 
-import inspect
 import ast
 from contextlib import contextmanager
 from utils.lang import class_stringify
+from .datatypes import *
+from .model import NgzModel
 
 class AstTranslator:
     '''Python到JavaScript代码翻译器'''
@@ -239,20 +240,52 @@ def _{0}_translate(self, node, *args, **kwargs):
             
         return self._node_translate(code)
 
+class NgzTranslator():
+    '''Ngz翻译器，用于生成AngularJS代码'''
+    
+    def __init__(self, model):
+        if not isinstance(model, NgzModel):
+            raise TypeError("%s不是一个Ngz模型" % model)
 
-class Env:
-    def puts(self, s):
-        frameinfo = inspect.getframeinfo(inspect.currentframe())
-        print("%s.%s(%s)" % (self, frameinfo[2], s))
+        self.model = model
 
-if __name__ == '__main__':
-    env = Env()
-    root = ast.parse(
-'''
-def abc(a, b):
-  print("IN")
-  return a + b
-''')
-    # for node in ast.walk(root):
-    #     if isinstance(node, ast.FunctionDef):
-    #         print("function %s(
+    def translate(self):
+        model = self.model
+        model_type = type(model)
+        watched_fields = {k: v
+                          for k, v in model_type.__dict__.items()
+                          if isinstance(v, Watched)}
+        res = []
+        
+        ## TODO: model_str_repr是否是标准的JSON表示？
+        model_str_repr = str(model)
+
+        ## TODO: model哪来的
+        model_def_code = '''var model = {0};'''.format(model_str_repr)
+        res.append(model_def_code)
+
+        for fkey, fval in watched_fields.items():
+            t = AstTranslator(fval._code)
+            watcher_js_code = t.translate()
+            res.append(watcher_js_code)
+
+            ng_watcher_funcname = '_$angularize_{0}'.format(fkey)
+            ng_watcher_code = '''function {0} (n, o) {{
+    return {1}(model, n, o);
+}}'''.format(ng_watcher_funcname, fval.rule)
+            res.append(ng_watcher_code)
+
+            ## TODO: scope哪来的。
+            ng_watch_code = \
+            '''scope.$watch(function () {{ return model.{0}; }},
+                 {1} );'''.format(fkey, ng_watcher_funcname)
+            res.append(ng_watch_code)
+
+        return '\n\n'.join(res)
+
+
+
+
+
+
+

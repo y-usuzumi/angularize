@@ -17,15 +17,16 @@ class TestAngularizeModel(unittest.TestCase):
     '''测试Angularize模型'''
     
     def setUp(self):
-        pass
-
-    def test_model_string_representation(self):
-        model = TestModel(
+        self.test_model = TestModel(
             test_1 = 5,
             test_2 = 0.0,
             test_3 = 4,
             test_4 = 'Test'
         )
+        pass
+
+    def test_model_string_representation(self):
+        model = self.test_model
         model_repr = str(model)
         self.assertTrue("'test_1': 5" in model_repr)
         self.assertTrue("'test_2': 0.0" in model_repr)
@@ -33,24 +34,12 @@ class TestAngularizeModel(unittest.TestCase):
         self.assertTrue("'test_4': 'Test'" in model_repr)
         
 
-    def test_model_generate_from_watched_fields(self):
-        model = TestModel(
-            test_1 = 5,
-            test_2 = 0.0,
-            test_3 = 4,
-            test_4 = 'Test'
-        )
-
+    def test_generate_code_from_model_watched_fields(self):
+        model = self.test_model
+        
         klass = model.__class__
         watched_object = klass.__dict__['test_3']
-        rule = getattr(klass, watched_object.rule)
-        import inspect
-        code_lines = inspect.getsourcelines(rule)[0]
-        if code_lines:
-            indent_len = len(code_lines[0]) - len(code_lines[0].lstrip())
-            code_lines = [c[indent_len:] for c in code_lines]
-
-        code = ''.join(code_lines)
             
-        t = AstTranslator(code)
+        t = AstTranslator(watched_object._code)
+        
         

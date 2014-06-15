@@ -1,4 +1,5 @@
 from functools import wraps
+import inspect
 
 def debug(func):
     @wraps(func)
@@ -116,3 +117,14 @@ class Watched(DataTypeDescriptor):
 
         super().__init__(self, *args, **kwargs)
 
+    @property
+    def _code(self):
+        code_lines = inspect.getsourcelines(
+            getattr(self.instance, self.rule))[0]
+        if code_lines:
+            indent_len = len(code_lines[0]) - len(code_lines[0].lstrip())
+            code_lines = [c[indent_len:] for c in code_lines]
+
+        code = ''.join(code_lines)
+        
+        return code

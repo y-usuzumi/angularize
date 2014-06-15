@@ -36,11 +36,17 @@ class ModelMetaClass(type):
 class NgzModel(metaclass=ModelMetaClass):
     '''Ngz模型，可从中生成AngularJS代码'''
 
-    def __str__(self):
+    @property
+    def dict_repr(self):
         dict = {
             k: getattr(self, k)
             for k, v in self.__class__.__dict__.items()
             if isinstance(v, DataTypeDescriptor)
         }
 
-        return str(dict)
+        return dict
+
+    def __str__(self):
+        return str(self.dict_repr)
+
+        
