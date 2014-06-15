@@ -43,4 +43,4 @@ class NgzModel(metaclass=ModelMetaClass):
             if isinstance(v, DataTypeDescriptor)
         }
 
-        return str(dict)
+        
