@@ -25,5 +25,6 @@ class TestNgzTranslator(unittest.TestCase):
 
     def test_translate(self):
         t = NgzTranslator(self.test_model)
-        print(t.translate())
+        ## TODO: 翻译结果检查
+        t.translate()
         

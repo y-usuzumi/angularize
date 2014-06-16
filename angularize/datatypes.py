@@ -32,7 +32,6 @@ class DataTypeDescriptor:
 
 
     def __set__(self, instance, value):
-        self.instance = instance
         name = self.name
         def raiseTypeError(expected, actual):
             raise TypeError("%s expected. Got %s" % (expected, actual))
@@ -55,6 +54,11 @@ class DataTypeDescriptor:
 
     def __delete__(self, instance):
         del instance.__dict__[self.name]
+
+    @property
+    def containing_class(self):
+        '''获取当前描述器所在类型'''
+        return self._containing_class
 
 
 class Integer(DataTypeDescriptor):
@@ -119,8 +123,10 @@ class Watched(DataTypeDescriptor):
 
     @property
     def _code(self):
+        '''获取监视规则代码'''
+        
         code_lines = inspect.getsourcelines(
-            getattr(self.instance, self.rule))[0]
+            getattr(self.containing_class, self.rule))[0]
         if code_lines:
             indent_len = len(code_lines[0]) - len(code_lines[0].lstrip())
             code_lines = [c[indent_len:] for c in code_lines]

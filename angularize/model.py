@@ -8,6 +8,8 @@ def make_signature(names):
         
 
 class ModelMetaClass(type):
+    '''好吧这是从Python 3 Metaprogramming视频中抄袭而来'''
+    
     def __prepare__(name, *bases):
         d = OrderedDict()
         return d
@@ -18,6 +20,7 @@ class ModelMetaClass(type):
         descriptors = {k: v for k, v in clsdict.items() if isinstance(v, DataTypeDescriptor)}
         for k, v in descriptors.items():
             setattr(v, 'name', k)
+            setattr(v, '_containing_class', clsobj)
 
         sig = make_signature(descriptors)
         clsobj.__signature__ = sig
